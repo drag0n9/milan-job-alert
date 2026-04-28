@@ -1,0 +1,41 @@
+name: Milan Job Alert
+
+on:
+  schedule:
+    # Mon–Fri, 6x/day (Milan time UTC+2 in summer):
+    # 7am, 9am, 11am, 1pm, 4pm, 6pm Milan = 5,7,9,11,14,16 UTC
+    - cron: '0 5,7,9,11,14,16 * * 1-5'
+  workflow_dispatch:  # manual trigger from Actions tab
+
+permissions:
+  contents: write  # needed to commit seen_jobs.json back to repo
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run job monitor
+        env:
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python monitor.py
+
+      - name: Commit updated seen_jobs.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_jobs.json
+          git diff --cached --quiet || git commit -m "chore: update seen jobs [skip ci]"
+          git push
