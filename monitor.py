@@ -226,7 +226,7 @@ def build_email_html(jobs: list[dict]) -> str:
         rows += f"""
         <tr>
           <td style="padding:10px 12px;border-bottom:1px solid #eee;">
-            <a href="{j['url']}" style="font-weight:600;color:#1a1a1a;text-decoration:none;">
+            <a href="{j['url']}" style="font-weight:600;color:#1155CC;text-decoration:underline;">
               {j['title']}{badge}
             </a><br>
             <span style="color:#555;font-size:13px;">{j['company'] or '—'}</span>
@@ -241,7 +241,7 @@ def build_email_html(jobs: list[dict]) -> str:
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:sans-serif;color:#1a1a1a;max-width:640px;margin:0 auto;padding:20px;">
-  <h2 style="margin-bottom:4px;">🎯 {len(jobs)} nuove offerte design a Milano</h2>
+  <h2 style="margin-bottom:4px;">🎯 {len(jobs)} nuove offerte design — Italia</h2>
   <p style="color:#666;font-size:13px;margin-top:0;">
     {datetime.now().strftime("%A %d %B %Y, %H:%M")} — ⭐ = azienda fashion/luxury
   </p>
@@ -269,7 +269,7 @@ def send_email(jobs: list[dict]) -> None:
     payload = {
         "personalizations": [{"to": [{"email": email_to}]}],
         "from": {"email": email_from},
-        "subject": f"[Job Alert] {len(jobs)} nuove offerte design Milano",
+        "subject": f"[Job Alert] {len(jobs)} nuove offerte design — Italia",
         "content": [{"type": "text/html", "value": build_email_html(jobs)}],
     }
 
