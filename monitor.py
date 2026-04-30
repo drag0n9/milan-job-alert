@@ -37,30 +37,64 @@ FASHION_LUXURY_COMPANIES = [
 ]
 
 INDEED_FEEDS = [
+    # ── Milan (office / hybrid / remote) ──
     {
-        "name": "Indeed IT — core design titles",
+        "name": "Indeed — core titles (Milan)",
         "url": (
             "https://it.indeed.com/rss?q=%22product+designer%22+OR+%22ux+designer%22"
             "+OR+%22ui+designer%22+OR+%22digital+designer%22"
-            "&l=Milano&radius=15&sort=date&fromage=3"
+            "&l=Milano&radius=25&sort=date&fromage=1"
         ),
     },
     {
-        "name": "Indeed IT — Italian design titles",
+        "name": "Indeed — Italian titles (Milan)",
         "url": (
             "https://it.indeed.com/rss?q=%22experience+designer%22+OR+%22interaction+designer%22"
-            "+OR+%22designer+digitale%22"
-            "&l=Milano&radius=15&sort=date&fromage=3"
+            "+OR+%22designer+digitale%22+OR+%22design+lead%22"
+            "&l=Milano&radius=25&sort=date&fromage=1"
+        ),
+    },
+    # ── Full remote — Italy ──
+    {
+        "name": "Indeed — core titles (Italy remote)",
+        "url": (
+            "https://it.indeed.com/rss?q=%22product+designer%22+OR+%22ux+designer%22"
+            "+OR+%22ui+designer%22+OR+%22digital+designer%22+remoto"
+            "&l=Italia&sort=date&fromage=1"
+        ),
+    },
+    {
+        "name": "Indeed — Italian titles (Italy remote)",
+        "url": (
+            "https://it.indeed.com/rss?q=%22experience+designer%22+OR+%22interaction+designer%22"
+            "+OR+%22designer+digitale%22+OR+%22design+lead%22+remoto"
+            "&l=Italia&sort=date&fromage=1"
         ),
     },
 ]
 
-LINKEDIN_PARAMS = {
-    "keywords": "product designer OR ux designer OR ui designer",
-    "location": "Milan, Lombardy, Italy",
-    "f_TPR": "r86400",  # last 24 hours
-    "start": "0",
-}
+# Each entry: (params_dict, label) — LinkedIn is scraped per-search
+LINKEDIN_SEARCHES = [
+    (
+        {
+            "keywords": "product designer OR ux designer OR ui designer OR digital designer",
+            "location": "Milan, Lombardy, Italy",
+            "f_TPR": "r3600",   # posted in last 1 hour
+            "start": "0",
+        },
+        "Milan",
+    ),
+    (
+        {
+            "keywords": "product designer OR ux designer OR ui designer OR digital designer",
+            "location": "Italy",
+            "f_TPR": "r3600",   # posted in last 1 hour
+            "f_WT": "2",        # remote only
+            "start": "0",
+        },
+        "Italy remote",
+    ),
+]
 LINKEDIN_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 LINKEDIN_HEADERS = {
     "User-Agent": (
@@ -137,47 +171,48 @@ def fetch_indeed(seen: set) -> list[dict]:
 
 def fetch_linkedin(seen: set) -> list[dict]:
     new_jobs = []
-    log.info("Fetching LinkedIn jobs")
-    try:
-        resp = requests.get(
-            LINKEDIN_URL,
-            params=LINKEDIN_PARAMS,
-            headers=LINKEDIN_HEADERS,
-            timeout=20,
-        )
-        resp.raise_for_status()
-    except Exception as exc:
-        log.error("LinkedIn fetch failed: %s", exc)
-        return []
+    for params, label in LINKEDIN_SEARCHES:
+        log.info("Fetching LinkedIn jobs (%s)", label)
+        try:
+            resp = requests.get(
+                LINKEDIN_URL,
+                params=params,
+                headers=LINKEDIN_HEADERS,
+                timeout=20,
+            )
+            resp.raise_for_status()
+        except Exception as exc:
+            log.error("LinkedIn fetch failed (%s): %s", label, exc)
+            continue
 
-    try:
-        soup = BeautifulSoup(resp.text, "html.parser")
-        cards = soup.select("li")
-        for card in cards:
-            title_el = card.select_one(".base-search-card__title")
-            company_el = card.select_one(".base-search-card__subtitle")
-            link_el = card.select_one("a.base-card__full-link")
-            if not title_el:
-                continue
-            title = title_el.get_text(strip=True)
-            company = company_el.get_text(strip=True) if company_el else ""
-            link = link_el["href"].split("?")[0] if link_el else ""
-            if not is_design_role(title):
-                continue
-            jid = job_id(title, link)
-            if jid in seen:
-                continue
-            seen.add(jid)
-            new_jobs.append({
-                "title": title,
-                "company": company,
-                "url": link,
-                "source": "LinkedIn",
-                "fashion": is_fashion_luxury(company),
-            })
-            log.info("New LinkedIn job: %s @ %s", title, company)
-    except Exception as exc:
-        log.error("LinkedIn parse error: %s", exc)
+        try:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            cards = soup.select("li")
+            for card in cards:
+                title_el = card.select_one(".base-search-card__title")
+                company_el = card.select_one(".base-search-card__subtitle")
+                link_el = card.select_one("a.base-card__full-link")
+                if not title_el:
+                    continue
+                title = title_el.get_text(strip=True)
+                company = company_el.get_text(strip=True) if company_el else ""
+                link = link_el["href"].split("?")[0] if link_el else ""
+                if not is_design_role(title):
+                    continue
+                jid = job_id(title, link)
+                if jid in seen:
+                    continue
+                seen.add(jid)
+                new_jobs.append({
+                    "title": title,
+                    "company": company,
+                    "url": link,
+                    "source": f"LinkedIn ({label})",
+                    "fashion": is_fashion_luxury(company),
+                })
+                log.info("New LinkedIn job: %s @ %s", title, company)
+        except Exception as exc:
+            log.error("LinkedIn parse error (%s): %s", label, exc)
 
     return new_jobs
 

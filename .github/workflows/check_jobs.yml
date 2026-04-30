@@ -2,9 +2,8 @@ name: Milan Job Alert
 
 on:
   schedule:
-    # Mon–Fri, 6x/day (Milan time UTC+2 in summer):
-    # 7am, 9am, 11am, 1pm, 4pm, 6pm Milan = 5,7,9,11,14,16 UTC
-    - cron: '0 5,7,9,11,14,16 * * 1-5'
+    # Every 15 minutes, 24/7 (public repo = unlimited minutes)
+    - cron: '*/15 * * * *'
   workflow_dispatch:  # manual trigger from Actions tab
 
 permissions:
