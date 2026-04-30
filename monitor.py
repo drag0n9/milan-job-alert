@@ -1,11 +1,8 @@
 import os
 import json
 import hashlib
-import smtplib
 import logging
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import feedparser
 import requests
@@ -230,23 +227,25 @@ def build_email_html(jobs: list[dict]) -> str:
 
 
 def send_email(jobs: list[dict]) -> None:
+    api_key = os.environ["SENDGRID_API_KEY"]
     email_from = os.environ["EMAIL_FROM"]
     email_to = os.environ["EMAIL_TO"]
-    password = os.environ["EMAIL_PASSWORD"]
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Job Alert] {len(jobs)} nuove offerte design Milano"
-    msg["From"] = email_from
-    msg["To"] = email_to
+    payload = {
+        "personalizations": [{"to": [{"email": email_to}]}],
+        "from": {"email": email_from},
+        "subject": f"[Job Alert] {len(jobs)} nuove offerte design Milano",
+        "content": [{"type": "text/html", "value": build_email_html(jobs)}],
+    }
 
-    html_body = build_email_html(jobs)
-    msg.attach(MIMEText(html_body, "html"))
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(email_from, password)
-        server.sendmail(email_from, email_to, msg.as_string())
-
-    log.info("Email sent: %d jobs", len(jobs))
+    resp = requests.post(
+        "https://api.sendgrid.com/v3/mail/send",
+        json=payload,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    log.info("Email sent: %d jobs (status %s)", len(jobs), resp.status_code)
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
