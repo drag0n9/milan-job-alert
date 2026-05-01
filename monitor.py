@@ -147,6 +147,7 @@ def fetch_indeed(seen: set) -> list[dict]:
             log.error("Error parsing feed %s: %s", feed_cfg["name"], exc)
             continue
 
+        log.info("  → %d entries in feed", len(feed.entries))
         for entry in feed.entries:
             title = entry.get("title", "")
             link = entry.get("link", "")
@@ -188,6 +189,7 @@ def fetch_linkedin(seen: set) -> list[dict]:
         try:
             soup = BeautifulSoup(resp.text, "html.parser")
             cards = soup.select("li")
+            log.info("  → %d cards from LinkedIn (%s), response snippet: %s", len(cards), label, resp.text[:200])
             for card in cards:
                 title_el = card.select_one(".base-search-card__title")
                 company_el = card.select_one(".base-search-card__subtitle")
