@@ -79,7 +79,7 @@ LINKEDIN_SEARCHES = [
         {
             "keywords": "product designer OR ux designer OR ui designer OR digital designer",
             "location": "Milan, Lombardy, Italy",
-            "f_TPR": "r3600",   # posted in last 1 hour
+            "f_TPR": "r86400",  # posted in last 24h (guest API unreliable below this)
             "start": "0",
         },
         "Milan",
@@ -88,7 +88,7 @@ LINKEDIN_SEARCHES = [
         {
             "keywords": "product designer OR ux designer OR ui designer OR digital designer",
             "location": "Italy",
-            "f_TPR": "r3600",   # posted in last 1 hour
+            "f_TPR": "r86400",  # posted in last 24h (guest API unreliable below this)
             "f_WT": "2",        # remote only
             "start": "0",
         },
