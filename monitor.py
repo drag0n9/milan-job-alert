@@ -36,39 +36,21 @@ FASHION_LUXURY_COMPANIES = [
     "luxottica", "max mara", "akqa", "accenture song", "publicis sapient",
 ]
 
-INDEED_FEEDS = [
-    # ── Milan (office / hybrid / remote) ──
+INFOJOBS_FEEDS = [
     {
-        "name": "Indeed — core titles (Milan)",
+        "name": "InfoJobs — design (Milan)",
         "url": (
-            "https://it.indeed.com/rss?q=%22product+designer%22+OR+%22ux+designer%22"
-            "+OR+%22ui+designer%22+OR+%22digital+designer%22"
-            "&l=Milano&radius=25&sort=date&fromage=1"
+            "https://www.infojobs.it/jobsearch/search-results/list.xhtml"
+            "?keyword=product+designer+ux+designer+ui+designer+digital+designer"
+            "&provinceIds=12&sortBy=PUBLICATION_DATE&maxResults=50&format=rss"
         ),
     },
     {
-        "name": "Indeed — Italian titles (Milan)",
+        "name": "InfoJobs — design (Italy remote)",
         "url": (
-            "https://it.indeed.com/rss?q=%22experience+designer%22+OR+%22interaction+designer%22"
-            "+OR+%22designer+digitale%22+OR+%22design+lead%22"
-            "&l=Milano&radius=25&sort=date&fromage=1"
-        ),
-    },
-    # ── Full remote — Italy ──
-    {
-        "name": "Indeed — core titles (Italy remote)",
-        "url": (
-            "https://it.indeed.com/rss?q=%22product+designer%22+OR+%22ux+designer%22"
-            "+OR+%22ui+designer%22+OR+%22digital+designer%22+remoto"
-            "&l=Italia&sort=date&fromage=1"
-        ),
-    },
-    {
-        "name": "Indeed — Italian titles (Italy remote)",
-        "url": (
-            "https://it.indeed.com/rss?q=%22experience+designer%22+OR+%22interaction+designer%22"
-            "+OR+%22designer+digitale%22+OR+%22design+lead%22+remoto"
-            "&l=Italia&sort=date&fromage=1"
+            "https://www.infojobs.it/jobsearch/search-results/list.xhtml"
+            "?keyword=product+designer+ux+designer+ui+designer+digital+designer"
+            "&telecommuting=true&sortBy=PUBLICATION_DATE&maxResults=50&format=rss"
         ),
     },
 ]
@@ -137,9 +119,9 @@ def is_fashion_luxury(company: str) -> bool:
 
 # ── Source fetchers ────────────────────────────────────────────────────────────
 
-def fetch_indeed(seen: set) -> list[dict]:
+def fetch_infojobs(seen: set) -> list[dict]:
     new_jobs = []
-    for feed_cfg in INDEED_FEEDS:
+    for feed_cfg in INFOJOBS_FEEDS:
         log.info("Fetching %s", feed_cfg["name"])
         try:
             feed = feedparser.parse(feed_cfg["url"])
@@ -151,7 +133,7 @@ def fetch_indeed(seen: set) -> list[dict]:
         for entry in feed.entries:
             title = entry.get("title", "")
             link = entry.get("link", "")
-            company = entry.get("author", "")
+            company = entry.get("author", "") or entry.get("source", {}).get("title", "")
             if not is_design_role(title):
                 continue
             jid = job_id(title, link)
@@ -162,10 +144,10 @@ def fetch_indeed(seen: set) -> list[dict]:
                 "title": title,
                 "company": company,
                 "url": link,
-                "source": "Indeed",
+                "source": "InfoJobs",
                 "fashion": is_fashion_luxury(company),
             })
-            log.info("New Indeed job: %s @ %s", title, company)
+            log.info("New InfoJobs job: %s @ %s", title, company)
 
     return new_jobs
 
@@ -292,7 +274,7 @@ def main() -> None:
     log.info("Loaded %d seen job IDs", len(seen))
 
     new_jobs: list[dict] = []
-    new_jobs += fetch_indeed(seen)
+    new_jobs += fetch_infojobs(seen)
     new_jobs += fetch_linkedin(seen)
 
     save_seen(seen)
